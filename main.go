@@ -1,16 +1,22 @@
 
 include "gutil"
 include "vars"
+include "control"
 include "window"
 
-func TerminInit () () {
+func InitTermin() () {
 	InitGu()
 	clear()
 	InitGetCh()
-
 }
 
-func TerminEnd () () {
+func StopTermin() () {
+	for i:=0;i<len(wins);i++{
+		end(wins[i])
+	}
+}
+
+func EndTermin() () {
 	for i:=0;i<len(wins);i++{
 		end(wins[i])
 	}
