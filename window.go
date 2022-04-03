@@ -24,7 +24,7 @@ func _MakeWin( name string, stream *bufio.Writer, MinY, MaxY, MinX, MaxX int ) (
 name, MaxX, MaxY, termx, termy,
 		))
 	}
-	w := &Window{name, Ordenate{MinY, MinX}, Ordenate{MaxY, MaxX}, stream, "\x1b[0m"}
+	w := &Window{name, Ordenate{MinY, MinX}, Ordenate{MaxY, MaxX}, stream}
 	return w, nil
 }
 
