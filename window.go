@@ -8,7 +8,6 @@ type Window struct {
 	min Ordenate
 	max Ordenate
 	stream *bufio.Writer
-	color string
 }
 
 func MakeWin( name string, stream *bufio.Writer, MinY, MaxY, MinX, MaxX int ) ( *Window ) {
@@ -48,7 +47,7 @@ func _wprint (w *Window, y int, x int, stuff string) (error) {
 	var ny = y+w.min.y
 	var nx = x+w.min.x
 	if (ny <= w.max.y && nx <= w.max.x && nx >= w.min.x-1 && ny >= w.min.y-1 && nx+len(stuff) <= w.max.x) {
-		w.stream.WriteString(spos(ny, nx)+w.color+stuff)
+		w.stream.WriteString(spos(ny, nx)+stuff)
 		return nil
 	} else {
 		return errors.New(
@@ -63,7 +62,7 @@ func wuprint ( w *Window, y int, x int, stuff string ) () {
 	var ny = y+w.min.y
 	var nx = x+w.min.x
 	if (ny <= w.max.y && nx <= w.max.x && nx >= w.min.x-1 && ny >= w.min.y-1) {
-		w.stream.WriteString(spos(ny, nx)+w.color+stuff)
+		w.stream.WriteString(spos(ny, nx)+stuff)
 	} else {
 		panic( errors.New(
 			spf("tried to write out of window `%s`s bounds\nx(max:%d, input:%d(%d+len(msg)))\ny(max:%d, input:%d)",
@@ -76,7 +75,7 @@ func wputc(w *Window, y int, x int, stuff string) ( error ) {
 	var ny = y+w.min.y
 	var nx = x+w.min.x
 	if (ny < w.max.y && nx < w.max.x && nx > w.min.x-1 && ny > w.min.y-1) {
-		w.stream.WriteString(spos(ny, nx)+w.color+stuff)
+		w.stream.WriteString(spos(ny, nx)+stuff)
 		return nil
 	} else {
 		return errors.New(spf("tried to write out of window `%s`s bounds", w.name))
@@ -85,7 +84,7 @@ func wputc(w *Window, y int, x int, stuff string) ( error ) {
 
 func wuputc(w *Window, y int, x int, stuff string) () {
 	if (len(stuff)==1) {
-		w.stream.WriteString(spos(y, x)+w.color+stuff)
+		w.stream.WriteString(spos(y, x)+stuff)
 	} else {
 		panic(errors.New(spf("func wuputc char to write's len != 1")))
 	}
@@ -111,11 +110,10 @@ func wmove(w *Window, y int, x int) () {
 
 func wumove(w *Window, y int, x int) () {
 	w.stream.Write([]byte(spos(y, x)))
-	w.stream.Write([]byte(w.color))
 }
 
 func wDrawLine(w *Window, y int, char string) () {
-	w.stream.WriteString(spos(y, 0) + w.color+strings.Repeat(char, w.max.x+1))
+	w.stream.WriteString(spos(y, 0) + strings.Repeat(char, w.max.x+1))
 }
 
 func wDrawCollum( w *Window, x int, char string ) () {
@@ -127,7 +125,6 @@ func wDrawCollum( w *Window, x int, char string ) () {
 		w.stream.Flush()
 		panic(errors.New(spf("func wDrawCollum char must be len 1 (len(char) -> %d)\n", len(char))))
 	}
-	w.stream.WriteString(w.color)
 	for i:=w.min.y;i<w.max.y;i++ {
 		w.stream.WriteString(spos(i, x)+c)
 	}
@@ -149,10 +146,3 @@ func wgtk ( w *Window ) ( string ) {
 	return e
 }
 
-func wColorOn( w *Window, col string ) () {
-	w.color = col
-}
-
-func wColorOff( w *Window ) () {
-	w.color = "\x1b[0m"
-}
