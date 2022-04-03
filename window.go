@@ -130,6 +130,16 @@ func wDrawCollum( w *Window, x int, char string ) () {
 	}
 }
 
+func Compress( x []byte ) ( string ) {
+	buff := ""
+	for i:=0;i!=6;i++{
+		if (x[i] == 0) { break }
+		buff+=spf("%.3d,", x[i])
+		lk = append(lk, x[i])
+	}
+	return buff
+}
+
 func wgtk ( w *Window ) ( string ) {
 	x:=read(w)
 	lk = []byte{}
