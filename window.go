@@ -5,8 +5,12 @@ type Ordenate struct {
 
 type Window struct {
 	name string
-	min Ordenate
-	max Ordenate
+	MinX int
+	MaxX int
+	MinY int
+	MaxY int
+	LenX int
+	LenY int
 	stream *bufio.Writer
 }
 
@@ -24,11 +28,11 @@ func _MakeWin( name string, stream *bufio.Writer, MinY, MaxY, MinX, MaxX int ) (
 name, MaxX, MaxY, termx, termy,
 		))
 	}
-	w := &Window{name, Ordenate{MinY, MinX}, Ordenate{MaxY, MaxX}, stream}
+	w := &Window{name, MinX, MaxX, MinY, MaxY, MaxX-MinX, MaxY-MinY, stream}
 	return w, nil
 }
 
-func read(w *Window) ([]byte) {
+func wread(w *Window) ([]byte) {
 	w.stream.Flush()
 	return GetChByte()
 }
@@ -44,38 +48,38 @@ func wprint (w *Window, y int, x int, stuff string) () {
 }
 
 func _wprint (w *Window, y int, x int, stuff string) (error) {
-	var ny = y+w.min.y
-	var nx = x+w.min.x
-	if (ny <= w.max.y && nx <= w.max.x && nx >= w.min.x-1 && ny >= w.min.y-1 && nx+len(stuff) <= w.max.x) {
+	var ny = y+w.MinY
+	var nx = x+w.MinX
+	if (ny <= w.MaxY && nx <= w.MaxX && nx >= w.MinX-1 && ny >= w.MinY-1 && nx+len(stuff) <= w.MaxX) {
 		w.stream.WriteString(spos(ny, nx)+stuff)
 		return nil
 	} else {
 		return errors.New(
 			spf("tried to write out of window `%s`s bounds\nx(max:%d, input:%d(%d+len(msg)))\ny(max:%d, input:%d)",
-			w.name, w.max.x, nx+len(stuff)-1, nx, w.max.y, ny,
+			w.name, w.MaxX, nx+len(stuff)-1, nx, w.MaxY, ny,
 		))
 	}
 }
 
 // window's unsafe print
 func wuprint ( w *Window, y int, x int, stuff string ) () {
-	var ny = y+w.min.y
-	var nx = x+w.min.x
-	if (ny <= w.max.y && nx <= w.max.x && nx >= w.min.x-1 && ny >= w.min.y-1) {
+	var ny = y+w.MinY
+	var nx = x+w.MinX
+	if (ny <= w.MaxY && nx <= w.MaxX && nx >= w.MinX-1 && ny >= w.MinY-1) {
 		w.stream.WriteString(spos(ny, nx)+stuff)
 	} else {
 		panic( errors.New(
 			spf("tried to write out of window `%s`s bounds\nx(max:%d, input:%d(%d+len(msg)))\ny(max:%d, input:%d)",
-			w.name, w.max.x, nx+len(stuff)-1, nx, w.max.y, ny,
+			w.name, w.MaxX, nx+len(stuff)-1, nx, w.MaxY, ny,
 		)))
 	}
 }
 
-func wputc(w *Window, y int, x int, stuff string) ( error ) {
-	var ny = y+w.min.y
-	var nx = x+w.min.x
-	if (ny < w.max.y && nx < w.max.x && nx > w.min.x-1 && ny > w.min.y-1) {
-		w.stream.WriteString(spos(ny, nx)+stuff)
+func wputc(w *Window, y int, x int, stuff rune) ( error ) {
+	var ny = y+w.MinY
+	var nx = x+w.MinX
+	if (ny < w.MaxY && nx < w.MaxX && nx > w.MinX-1 && ny > w.MinY-1) {
+		w.stream.WriteString(spos(ny, nx)+string(stuff))
 		return nil
 	} else {
 		return errors.New(spf("tried to write out of window `%s`s bounds", w.name))
@@ -91,9 +95,9 @@ func wuputc(w *Window, y int, x int, stuff string) () {
 }
 
 func wmove(w *Window, y int, x int) () {
-	var ny = y+w.min.y
-	var nx = x+w.min.x
-	if (ny < w.max.y && nx < w.max.x && nx > w.min.x-1 && ny > w.min.y-1) {
+	var ny = y+w.MinY
+	var nx = x+w.MinX
+	if (ny < w.MaxY && nx < w.MaxX && nx > w.MinX-1 && ny > w.MinY-1) {
 		w.stream.WriteString(spos(y, x))
 	} else {
 		clear()
@@ -102,7 +106,7 @@ func wmove(w *Window, y int, x int) () {
 		panic(errors.New(
 			spf(
 				"tried to wmove out of window `%s`s bounds\nx(max:%d, input:%d)\ny(max:%d, input:%d)",
-				w.name, w.max.x, nx, w.max.y, ny,
+				w.name, w.MaxX, nx, w.MaxY, ny,
 			),
 		))
 	}
@@ -112,21 +116,35 @@ func wumove(w *Window, y int, x int) () {
 	w.stream.Write([]byte(spos(y, x)))
 }
 
-func wDrawLine(w *Window, y int, char string) () {
-	w.stream.WriteString(spos(y, 0) + strings.Repeat(char, w.max.x+1))
+func wDrawLine(w *Window, y int, char rune) () {
+	if y == -1 {
+		y = w.MaxY-w.MinY
+	}
+	if w.MaxY < (y+w.MinY) || y < 0 {
+		panic(errors.New(
+			spf(
+				"wDrawLine's (%d) y can't be bigger than MaxY (%d) nor smaller than 0",
+				y, w.MaxY,
+			),
+		))
+	}
+	w.stream.WriteString(spos(w.MinY + y, w.MinX) + strings.Repeat(string(char), w.MaxX+1-w.MinX))
 }
 
-func wDrawCollum( w *Window, x int, char string ) () {
-	var c string
-	if len(char) == 1 {
-		c=string(char[0])
-	} else {
-		clear()
-		w.stream.Flush()
-		panic(errors.New(spf("func wDrawCollum char must be len 1 (len(char) -> %d)\n", len(char))))
+func wDrawCollum( w *Window, x int, char rune) () {
+	if x == -1 {
+		x = w.MaxX-w.MinX
 	}
-	for i:=w.min.y;i<w.max.y;i++ {
-		w.stream.WriteString(spos(i, x)+c)
+	if w.MaxX < (x+w.MinX) || x < 0 {
+		panic(errors.New(
+			spf(
+				"wDrawCollum's (%d) x can't be bigger than MaxX (%d) nor smaller than 0",
+				x, w.MaxX,
+			),
+		))
+	}
+	for i:=w.MinY;i<w.MaxY;i++ {
+		w.stream.WriteString(spos(i, w.MinX+x)+string(char))
 	}
 }
 
@@ -135,14 +153,14 @@ func Compress( x []byte ) ( string ) {
 	for i:=0;i!=6;i++{
 		if (x[i] == 0) { break }
 		buff+=spf("%.3d,", x[i])
-		lk = append(lk, x[i])
+		//lk = append(lk, x[i])
 	}
 	return buff
 }
 
 func wgtk ( w *Window ) ( string ) {
-	x:=read(w)
-	lk = []byte{}
+	x:=wread(w)
+	lk = x
 	e, ok := Control[Compress(x)]
 	if (!ok) {
 		// if this happens, update https://github.com/owseiwastaken/termin
@@ -150,9 +168,26 @@ func wgtk ( w *Window ) ( string ) {
 		//	   add the key to the HashMap, and it's name ( e.g. "103,":"g", "32":"space",)
 		// if you don't want to do this just send me a msg ow#2183 (discord)
 
-		// btw, lk saves the byte array of the key (on func Compress)
+		// btw, lk saves the byte array of the key
+		// tho, if u want the byte array, consider using wread
 		return "NULL"
 	}
 	return e
 }
+
+func wDrawBorder ( w *Window, char rune) () {
+	wDrawCollum(w, 0 , char)
+	wDrawCollum(w, -1, char)
+	wDrawLine(	w, 0 , char)
+	wDrawLine(	w, -1, char)
+}
+
+func wDrawBorderName ( w *Window, char rune ) () {
+	wDrawCollum(w, 0 , char)
+	wDrawCollum(w, -1, char)
+	wDrawLine(	w, 0 , char)
+	wDrawLine(	w, -1, char)
+	wprint(		w, 0 , 1, " " + w.name + " ")
+}
+
 
