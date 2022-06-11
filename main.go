@@ -1,8 +1,8 @@
 
 include "gutil"
-include "vars"
-include "control"
-include "window"
+include "vars.go"
+include "control.go"
+include "window.go"
 
 func InitTermin() () {
 	InitGu()
