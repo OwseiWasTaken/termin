@@ -208,6 +208,14 @@ func wWrite ( w *Window, s string ) () {
 	w.stream.WriteString(s)
 }
 
+func wPut ( w *Window, s rune) () {
+	w.stream.WriteByte(byte(s))
+}
+
+func wPutb ( w *Window, s byte) () {
+	w.stream.WriteByte(s)
+}
+
 func wColor ( s string ) () {
 	stdout.WriteString(s)
 }
