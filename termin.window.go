@@ -192,7 +192,7 @@ func wDrawBorderName ( w *Window, char rune ) () {
 	wprint(		w, 0 , 1, " " + w.name + " ")
 }
 
-func wClear ( w *Window ) () {
+func wclear ( w *Window ) () {
 	for i:=w.MinY;i<w.MaxY;i++ {
 		wDrawLine(w, i, ' ')
 	}
@@ -200,22 +200,22 @@ func wClear ( w *Window ) () {
 	wmove(w, 0, 0)
 }
 
-func wFlush( w *Window ) () {
+func wflush( w *Window ) () {
 	w.stream.Flush()
 }
 
-func wWrite ( w *Window, s string ) () {
+func wwrite ( w *Window, s string ) () {
 	w.stream.WriteString(s)
 }
 
-func wPut ( w *Window, s rune) () {
+func wput ( w *Window, s rune) () {
 	w.stream.WriteByte(byte(s))
 }
 
-func wPutb ( w *Window, s byte) () {
+func wputb ( w *Window, s byte) () {
 	w.stream.WriteByte(s)
 }
 
-func wColor ( s string ) () {
+func wcolor ( s string ) () {
 	stdout.WriteString(s)
 }
